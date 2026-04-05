@@ -1,65 +1,165 @@
-
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TASK.EXE — Cyber Task Manager</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--font-sans)}
-.wrap{padding:1.5rem 1rem;max-width:720px;margin:0 auto}
-h1{font-size:22px;font-weight:500;color:var(--color-text-primary);margin-bottom:1.5rem}
-.toolbar{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap}
-.toolbar input[type=text]{flex:1;min-width:180px}
-.toolbar select{width:120px}
-.toolbar input[type=date]{width:150px}
-.btn-add{background:var(--color-text-primary);color:var(--color-background-primary);border:none;border-radius:var(--border-radius-md);padding:8px 16px;cursor:pointer;font-size:14px;font-weight:500}
-.btn-add:hover{opacity:0.85}
-.filters{display:flex;gap:8px;margin-bottom:1.25rem;flex-wrap:wrap}
-.filter-btn{background:transparent;border:0.5px solid var(--color-border-secondary);border-radius:20px;padding:5px 14px;font-size:13px;color:var(--color-text-secondary);cursor:pointer}
-.filter-btn.active{background:var(--color-text-primary);color:var(--color-background-primary);border-color:var(--color-text-primary)}
+:root{
+--neon-cyan:#00f5ff;
+--neon-pink:#ff2d78;
+--neon-purple:#b44fff;
+--neon-green:#00ff88;
+--neon-amber:#ffb700;
+--bg-dark:#0a0a12;
+--bg-card:#0f0f1e;
+--bg-card2:#141428;
+--text-main:#e8e8ff;
+--text-sub:#7878aa;
+}
+body{background:var(--bg-dark);min-height:100vh;font-family:'Courier New',Courier,monospace;color:var(--text-main)}
+
+@keyframes fadeSlideIn{from{opacity:0;transform:translateY(-16px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+@keyframes scanline{0%{top:-40px}100%{top:100%}}
+@keyframes checkPop{0%{transform:scale(0)}60%{transform:scale(1.4)}100%{transform:scale(1)}}
+@keyframes borderGlow{0%,100%{border-color:rgba(0,245,255,0.3)}50%{border-color:rgba(180,79,255,0.6)}}
+@keyframes countUp{from{transform:translateY(8px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes titleFlicker{0%,19%,21%,23%,25%,54%,56%,100%{opacity:1}20%,24%,55%{opacity:0.6}}
+
+.app{min-height:100vh;padding:30px 16px;position:relative;overflow:hidden}
+.scanline{position:fixed;left:0;width:100%;height:40px;background:linear-gradient(transparent,rgba(0,245,255,0.025),transparent);animation:scanline 5s linear infinite;pointer-events:none;z-index:0}
+.grid-bg{position:fixed;inset:0;background-image:linear-gradient(rgba(0,245,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,245,255,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+.content{position:relative;z-index:1;max-width:720px;margin:0 auto}
+
+.header{margin-bottom:28px;text-align:center}
+.title-main{font-size:32px;font-weight:700;color:var(--neon-cyan);letter-spacing:6px;text-transform:uppercase;display:inline-block;animation:titleFlicker 6s infinite;text-shadow:0 0 20px rgba(0,245,255,0.5)}
+.title-ghost{position:relative;display:inline-block}
+.title-ghost::before{content:'TASK.EXE';position:absolute;left:3px;top:0;color:var(--neon-pink);opacity:0.35;letter-spacing:6px;font-size:32px;font-weight:700}
+.title-sub{font-size:11px;color:var(--text-sub);letter-spacing:8px;text-transform:uppercase;margin-top:6px}
+.header-line{width:100%;height:1px;background:linear-gradient(90deg,transparent,var(--neon-cyan),transparent);margin-top:16px;opacity:0.4}
+
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+.stat{background:var(--bg-card);border:1px solid rgba(0,245,255,0.12);border-radius:8px;padding:12px 8px;text-align:center;transition:all 0.3s;cursor:default}
+.stat:hover{border-color:rgba(0,245,255,0.4);background:var(--bg-card2);transform:translateY(-2px)}
+.stat-num{font-size:24px;font-weight:700;animation:countUp 0.4s ease}
+.stat-label{font-size:9px;color:var(--text-sub);letter-spacing:2px;text-transform:uppercase;margin-top:3px}
+.stat.s-total .stat-num{color:var(--neon-cyan)}
+.stat.s-active .stat-num{color:var(--neon-pink)}
+.stat.s-done .stat-num{color:var(--neon-green)}
+.stat.s-over .stat-num{color:var(--neon-amber)}
+
+.progress-wrap{margin-bottom:24px}
+.progress-label{display:flex;justify-content:space-between;font-size:10px;color:var(--text-sub);letter-spacing:2px;margin-bottom:6px}
+.progress-bar{height:4px;background:rgba(0,245,255,0.08);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--neon-cyan),var(--neon-purple));border-radius:2px;transition:width 0.7s cubic-bezier(0.34,1.56,0.64,1)}
+
+.input-area{background:var(--bg-card);border:1px solid rgba(0,245,255,0.2);border-radius:12px;padding:16px;margin-bottom:16px;animation:borderGlow 4s infinite}
+.input-row{display:flex;gap:8px;flex-wrap:wrap}
+.cyber-input{background:#060610;border:1px solid rgba(0,245,255,0.2);border-radius:6px;color:var(--text-main);font-size:13px;padding:9px 12px;outline:none;font-family:'Courier New',monospace;flex:1;min-width:160px;transition:border-color 0.2s}
+.cyber-input:focus{border-color:var(--neon-cyan);box-shadow:0 0 8px rgba(0,245,255,0.15)}
+.cyber-input::placeholder{color:var(--text-sub)}
+.cyber-select{background:#060610;border:1px solid rgba(0,245,255,0.2);border-radius:6px;color:var(--text-main);font-size:13px;padding:9px 10px;outline:none;font-family:'Courier New',monospace;width:110px;cursor:pointer;transition:border-color 0.2s}
+.cyber-select:focus{border-color:var(--neon-cyan)}
+.cyber-date{width:148px}
+.btn-add{background:var(--neon-cyan);color:#000;border:none;border-radius:6px;padding:9px 20px;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:2px;text-transform:uppercase;transition:all 0.2s;font-family:'Courier New',monospace;white-space:nowrap}
+.btn-add:hover{background:#fff;transform:scale(1.05);box-shadow:0 0 16px rgba(0,245,255,0.4)}
+.btn-add:active{transform:scale(0.97)}
+
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.filter-btn{background:transparent;border:1px solid rgba(120,120,170,0.25);border-radius:20px;padding:5px 14px;font-size:10px;color:var(--text-sub);cursor:pointer;letter-spacing:2px;text-transform:uppercase;transition:all 0.2s;font-family:'Courier New',monospace}
+.filter-btn:hover{border-color:var(--neon-cyan);color:var(--neon-cyan)}
+.filter-btn.active{background:rgba(0,245,255,0.08);border-color:var(--neon-cyan);color:var(--neon-cyan)}
+
 .task-list{display:flex;flex-direction:column;gap:8px}
-.task-card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:12px 14px;display:flex;align-items:center;gap:12px}
-.task-card.done{opacity:0.5}
-.task-card.done .task-title{text-decoration:line-through}
-.check{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--color-border-secondary);cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center}
-.check.checked{background:var(--color-text-primary);border-color:var(--color-text-primary)}
-.check.checked::after{content:'';width:6px;height:10px;border:2px solid var(--color-background-primary);border-top:none;border-left:none;transform:rotate(45deg) translateY(-1px)}
+.task-card{background:var(--bg-card);border:1px solid rgba(0,245,255,0.1);border-radius:10px;padding:13px 14px;display:flex;align-items:center;gap:12px;animation:fadeSlideIn 0.35s cubic-bezier(0.34,1.56,0.64,1);transition:border-color 0.25s,background 0.25s,transform 0.2s}
+.task-card:hover{border-color:rgba(0,245,255,0.3);background:var(--bg-card2);transform:translateX(2px)}
+.task-card.done{opacity:0.4;border-color:rgba(0,255,136,0.08)}
+.task-card.done .task-title{text-decoration:line-through;color:var(--text-sub)}
+
+.check{width:20px;height:20px;border-radius:4px;border:1.5px solid rgba(0,245,255,0.35);cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.2s}
+.check:hover{border-color:var(--neon-cyan);background:rgba(0,245,255,0.08)}
+.check.checked{background:var(--neon-green);border-color:var(--neon-green);animation:checkPop 0.3s cubic-bezier(0.34,1.56,0.64,1)}
+.check.checked::after{content:'';display:block;width:5px;height:9px;border:2px solid #000;border-top:none;border-left:none;transform:rotate(45deg) translateY(-1px)}
+
 .task-body{flex:1;min-width:0}
-.task-title{font-size:15px;color:var(--color-text-primary);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.task-title{font-size:14px;color:var(--text-main);margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:0.3px}
 .task-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.badge{font-size:11px;font-weight:500;padding:2px 8px;border-radius:10px}
-.badge.high{background:#FAECE7;color:#993C1D}
-.badge.mid{background:#FAEEDA;color:#854F0B}
-.badge.low{background:#EAF3DE;color:#3B6D11}
-.due{font-size:12px;color:var(--color-text-secondary)}
-.due.overdue{color:#A32D2D;font-weight:500}
-.due.today{color:#854F0B;font-weight:500}
-.task-actions{display:flex;gap:4px}
-.icon-btn{background:transparent;border:none;cursor:pointer;color:var(--color-text-tertiary);padding:4px;border-radius:6px;font-size:14px;line-height:1}
-.icon-btn:hover{color:var(--color-text-primary);background:var(--color-background-secondary)}
-.empty{text-align:center;padding:3rem;color:var(--color-text-tertiary);font-size:14px}
-.edit-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
-.edit-row input,.edit-row select{font-size:13px;padding:4px 8px}
-.edit-row .btn-save{background:var(--color-text-primary);color:var(--color-background-primary);border:none;border-radius:var(--border-radius-md);padding:4px 12px;font-size:13px;cursor:pointer}
-.edit-row .btn-cancel{background:transparent;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:4px 12px;font-size:13px;cursor:pointer;color:var(--color-text-secondary)}
+.badge{font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px;letter-spacing:2px;text-transform:uppercase}
+.badge.high{background:rgba(255,45,120,0.12);color:var(--neon-pink);border:1px solid rgba(255,45,120,0.25)}
+.badge.mid{background:rgba(255,183,0,0.1);color:var(--neon-amber);border:1px solid rgba(255,183,0,0.25)}
+.badge.low{background:rgba(0,255,136,0.08);color:var(--neon-green);border:1px solid rgba(0,255,136,0.2)}
+.due{font-size:11px;color:var(--text-sub)}
+.due.overdue{color:var(--neon-pink);animation:pulse 1.5s infinite}
+.due.today{color:var(--neon-amber)}
+
+.task-actions{display:flex;gap:4px;flex-shrink:0}
+.icon-btn{background:transparent;border:1px solid transparent;border-radius:6px;cursor:pointer;color:var(--text-sub);padding:5px 8px;font-size:13px;line-height:1;transition:all 0.2s;font-family:inherit}
+.icon-btn:hover{border-color:rgba(0,245,255,0.3);color:var(--neon-cyan);background:rgba(0,245,255,0.05)}
+.icon-btn.del:hover{border-color:rgba(255,45,120,0.3);color:var(--neon-pink);background:rgba(255,45,120,0.05)}
+
+.edit-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid rgba(0,245,255,0.08)}
+.btn-save{background:var(--neon-purple);color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:11px;cursor:pointer;font-weight:700;font-family:'Courier New',monospace;letter-spacing:1px;transition:all 0.2s}
+.btn-save:hover{opacity:0.85;box-shadow:0 0 10px rgba(180,79,255,0.4)}
+.btn-cancel{background:transparent;border:1px solid rgba(120,120,170,0.3);border-radius:6px;padding:6px 12px;font-size:11px;cursor:pointer;color:var(--text-sub);font-family:'Courier New',monospace;transition:all 0.2s}
+.btn-cancel:hover{border-color:var(--neon-pink);color:var(--neon-pink)}
+
+.empty{text-align:center;padding:4rem;color:var(--text-sub);font-size:12px;letter-spacing:3px;text-transform:uppercase}
+
+.footer{text-align:center;margin-top:32px;font-size:10px;color:rgba(120,120,170,0.4);letter-spacing:3px}
 </style>
-<div class="wrap">
-<h1>タスク管理</h1>
-<div class="toolbar">
-  <input type="text" id="new-title" placeholder="新しいタスクを入力..." />
-  <select id="new-pri">
-    <option value="high">高 優先度</option>
-    <option value="mid" selected>中 優先度</option>
-    <option value="low">低 優先度</option>
-  </select>
-  <input type="date" id="new-due" />
-  <button class="btn-add" onclick="addTask()">追加</button>
+</head>
+<body>
+<div class="app">
+<div class="grid-bg"></div>
+<div class="scanline"></div>
+<div class="content">
+
+<div class="header">
+  <div class="title-ghost">
+    <div class="title-main">TASK.EXE</div>
+  </div>
+  <div class="title-sub">cyber task management system v2.0</div>
+  <div class="header-line"></div>
 </div>
+
+<div class="stats" id="stats"></div>
+
+<div class="progress-wrap">
+  <div class="progress-label">
+    <span>PROGRESS</span>
+    <span id="progress-pct">0%</span>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="progress" style="width:0%"></div></div>
+</div>
+
+<div class="input-area">
+  <div class="input-row">
+    <input class="cyber-input" type="text" id="new-title" placeholder="> 新しいタスクを入力..." />
+    <select class="cyber-select" id="new-pri">
+      <option value="high">HIGH</option>
+      <option value="mid" selected>MID</option>
+      <option value="low">LOW</option>
+    </select>
+    <input class="cyber-input cyber-date" type="date" id="new-due" />
+    <button class="btn-add" onclick="addTask()">+ ADD</button>
+  </div>
+</div>
+
 <div class="filters">
-  <button class="filter-btn active" onclick="setFilter('all',this)">すべて</button>
-  <button class="filter-btn" onclick="setFilter('active',this)">未完了</button>
-  <button class="filter-btn" onclick="setFilter('done',this)">完了済み</button>
-  <button class="filter-btn" onclick="setFilter('overdue',this)">期限切れ</button>
-  <button class="filter-btn" onclick="setFilter('today',this)">今日まで</button>
+  <button class="filter-btn active" onclick="setFilter('all',this)">ALL</button>
+  <button class="filter-btn" onclick="setFilter('active',this)">ACTIVE</button>
+  <button class="filter-btn" onclick="setFilter('done',this)">DONE</button>
+  <button class="filter-btn" onclick="setFilter('overdue',this)">OVERDUE</button>
+  <button class="filter-btn" onclick="setFilter('today',this)">TODAY</button>
 </div>
+
 <div class="task-list" id="task-list"></div>
+<div class="footer">TASK.EXE // SYSTEM ONLINE // &copy; 2026</div>
 </div>
+</div>
+
 <script>
 let tasks=[
   {id:1,title:'企画書を作成する',pri:'high',due:'2026-04-04',done:false},
@@ -75,9 +175,9 @@ function today(){return new Date().toISOString().slice(0,10)}
 function dueLabel(due){
   if(!due)return null;
   const t=today();
-  if(due<t)return {label:'期限切れ',cls:'overdue'};
-  if(due===t)return {label:'今日まで',cls:'today'};
-  return {label:due.replace(/-/g,'/'),cls:''};
+  if(due<t)return{label:'!! OVERDUE',cls:'overdue'};
+  if(due===t)return{label:'!! TODAY',cls:'today'};
+  return{label:due.replace(/-/g,'/'),cls:''};
 }
 
 function setFilter(f,el){
@@ -98,10 +198,30 @@ function filtered(){
   });
 }
 
+function updateStats(){
+  const t=today();
+  const total=tasks.length;
+  const active=tasks.filter(tk=>!tk.done).length;
+  const done=tasks.filter(tk=>tk.done).length;
+  const over=tasks.filter(tk=>!tk.done&&tk.due&&tk.due<t).length;
+  const pct=total?Math.round(done/total*100):0;
+  document.getElementById('stats').innerHTML=`
+    <div class="stat s-total"><div class="stat-num">${total}</div><div class="stat-label">TOTAL</div></div>
+    <div class="stat s-active"><div class="stat-num">${active}</div><div class="stat-label">ACTIVE</div></div>
+    <div class="stat s-done"><div class="stat-num">${done}</div><div class="stat-label">DONE</div></div>
+    <div class="stat s-over"><div class="stat-num">${over}</div><div class="stat-label">OVERDUE</div></div>
+  `;
+  document.getElementById('progress').style.width=pct+'%';
+  document.getElementById('progress-pct').textContent=pct+'%';
+}
+
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+
 function render(){
+  updateStats();
   const list=document.getElementById('task-list');
   const shown=filtered();
-  if(!shown.length){list.innerHTML='<div class="empty">タスクはありません</div>';return;}
+  if(!shown.length){list.innerHTML='<div class="empty">> NO TASKS FOUND_</div>';return;}
   list.innerHTML=shown.map(tk=>{
     const d=tk.due?dueLabel(tk.due):null;
     const isEdit=editId===tk.id;
@@ -110,26 +230,24 @@ function render(){
       <div class="task-body">
         <div class="task-title">${esc(tk.title)}</div>
         <div class="task-meta">
-          <span class="badge ${tk.pri}">${tk.pri==='high'?'高優先度':tk.pri==='mid'?'中優先度':'低優先度'}</span>
+          <span class="badge ${tk.pri}">${tk.pri.toUpperCase()}</span>
           ${d?`<span class="due ${d.cls}">${d.label}</span>`:''}
         </div>
         ${isEdit?`<div class="edit-row">
-          <input type="text" id="e-title" value="${esc(tk.title)}" style="flex:1;min-width:140px">
-          <select id="e-pri"><option value="high"${tk.pri==='high'?' selected':''}>高</option><option value="mid"${tk.pri==='mid'?' selected':''}>中</option><option value="low"${tk.pri==='low'?' selected':''}>低</option></select>
-          <input type="date" id="e-due" value="${tk.due||''}">
-          <button class="btn-save" onclick="saveEdit(${tk.id})">保存</button>
-          <button class="btn-cancel" onclick="cancelEdit()">キャンセル</button>
+          <input class="cyber-input" type="text" id="e-title" value="${esc(tk.title)}" style="flex:1;min-width:140px">
+          <select class="cyber-select" id="e-pri" style="width:90px"><option value="high"${tk.pri==='high'?' selected':''}>HIGH</option><option value="mid"${tk.pri==='mid'?' selected':''}>MID</option><option value="low"${tk.pri==='low'?' selected':''}>LOW</option></select>
+          <input class="cyber-input cyber-date" type="date" id="e-due" value="${tk.due||''}">
+          <button class="btn-save" onclick="saveEdit(${tk.id})">SAVE</button>
+          <button class="btn-cancel" onclick="cancelEdit()">ESC</button>
         </div>`:''}
       </div>
       <div class="task-actions">
-        <button class="icon-btn" onclick="startEdit(${tk.id})" title="編集">✏</button>
-        <button class="icon-btn" onclick="del(${tk.id})" title="削除">✕</button>
+        <button class="icon-btn" onclick="startEdit(${tk.id})">✏</button>
+        <button class="icon-btn del" onclick="del(${tk.id})">✕</button>
       </div>
     </div>`;
   }).join('');
 }
-
-function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 
 function addTask(){
   const t=document.getElementById('new-title').value.trim();
@@ -139,10 +257,9 @@ function addTask(){
   document.getElementById('new-due').value='';
   render();
 }
-
 function toggle(id){tasks=tasks.map(t=>t.id===id?{...t,done:!t.done}:t);render();}
 function del(id){tasks=tasks.filter(t=>t.id!==id);render();}
-function startEdit(id){editId=id;render();document.getElementById('e-title').focus();}
+function startEdit(id){editId=id;render();setTimeout(()=>{const el=document.getElementById('e-title');if(el)el.focus()},50);}
 function cancelEdit(){editId=null;render();}
 function saveEdit(id){
   const title=document.getElementById('e-title').value.trim();
@@ -153,3 +270,5 @@ function saveEdit(id){
 document.getElementById('new-title').addEventListener('keydown',e=>{if(e.key==='Enter')addTask()});
 render();
 </script>
+</body>
+</html>
